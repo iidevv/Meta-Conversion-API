@@ -1,0 +1,11 @@
+
+version: 5.5.0.4
+type: common
+authorName: "Ilya I"
+moduleName: 'Meta Conversions API'
+description: 'Meta Conversions API integration.'
+minorRequiredCoreVersion: 0
+dependsOn: { }
+incompatibleWith: {  }
+showSettingsForm: true
+canDisable: true

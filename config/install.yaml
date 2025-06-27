@@ -1,0 +1,50 @@
+
+XLite\Model\Config:
+  - name: pixel_id
+    category: Iidev\MetaConversionAPI
+    type: XLite\View\FormField\Input\Text
+    orderby: 100
+    value: ''
+    translations:
+      - code: en
+        option_name: 'Pixel ID'
+  - name: access_token
+    category: Iidev\MetaConversionAPI
+    type: XLite\View\FormField\Input\Text
+    orderby: 150
+    value: ''
+    translations:
+      - code: en
+        option_name: 'Conversions API access token'
+  - name: included_referer_list
+    category: Iidev\MetaConversionAPI
+    type: XLite\View\FormField\Input\Text
+    orderby: 200
+    value: ''
+    translations:
+      - code: en
+        option_name: 'Included referer list'
+  - name: enabled
+    category: Iidev\MetaConversionAPI
+    type: XLite\View\FormField\Input\Checkbox\OnOffWithoutOffLabel
+    orderby: 250
+    value: ''
+    translations:
+      - code: en
+        option_name: 'Conversions API enabled'
+  - name: test_event_code
+    category: Iidev\MetaConversionAPI
+    type: XLite\View\FormField\Input\Text
+    orderby: 300
+    value: ''
+    translations:
+      - code: en
+        option_name: 'Test event code'
+  - name: is_debug
+    category: Iidev\MetaConversionAPI
+    type: XLite\View\FormField\Input\Checkbox\OnOffWithoutOffLabel
+    orderby: 350
+    value: ''
+    translations:
+      - code: en
+        option_name: 'Conversions API debug mode'
