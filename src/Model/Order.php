@@ -67,5 +67,4 @@ abstract class Order extends \XLite\Model\Order
 
         return false;
     }
-
 }
