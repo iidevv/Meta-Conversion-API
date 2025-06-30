@@ -21,20 +21,14 @@ abstract class Order extends \XLite\Model\Order
         $paymentStatus = $this->getPaymentStatus()->getCode();
         $oldStatus = $this->getOldPaymentStatusCode();
 
-        $events = new Events;
-
-        $order = \XLite\Core\Database::getRepo('XLite\Model\Order')->find($this->getOrderId());
-
-        if (!$order instanceof \XLite\Model\Order) {
-            return;
-        }
-
         if ($paymentStatus === $oldStatus) {
             return;
         }
 
         if ($paymentStatus === \XLite\Model\Order\Status\Payment::STATUS_PAID) {
-            $events->doPurchase($order);
+            $events = new Events;
+
+            $events->doPurchase($this);
         }
     }
 
