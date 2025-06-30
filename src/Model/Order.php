@@ -45,13 +45,7 @@ abstract class Order extends \XLite\Model\Order
         if ($this->isCompletedOrder()) {
             $events = new Events;
 
-            $order = \XLite\Core\Database::getRepo('XLite\Model\Order')->find($this->getOrderId());
-
-            if (!$order instanceof \XLite\Model\Order) {
-                return;
-            }
-
-            $events->doPurchase($order);
+            $events->doPurchase($this);
         }
     }
 
