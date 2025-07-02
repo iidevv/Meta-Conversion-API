@@ -4,19 +4,185 @@ namespace Iidev\MetaConversionAPI\Core;
 
 use Iidev\MetaConversionAPI\Core\API;
 use XLite\Core\Config;
+use \XLite\Core\Event;
+use \XLite\Core\Auth;
+
 
 class Events
 {
+    public function doSearch($data)
+    {
+        $eventName = 'Search';
+        $eventId = $this->getEventId($eventName);
+        $userData = $this->getUserData();
+
+        $contentIds = [];
+
+        foreach ($data as $product) {
+            if ($product instanceof \XLite\Model\Product) {
+                $contentIds[] = $product->getVariants()?->first()
+                    ? $product->getVariants()->first()?->getSku()
+                    : $product->getSku();
+            }
+        }
+
+        if (empty($contentIds)) {
+            return;
+        }
+
+        $parameters = [
+            'content_ids' => $contentIds,
+            'search_string' => \XLite\Core\Request::getInstance()->substring ?: '',
+            'content_type' => 'product',
+            'currency' => \XLite::getInstance()->getCurrency()->getCode(),
+        ];
+
+        $this->doEvent($eventName, $eventId, $parameters, $userData);
+    }
+
+    public function doViewContent($product)
+    {
+        $eventName = 'ViewContent';
+        $eventId = $this->getEventId($eventName);
+        $userData = $this->getUserData();
+
+        $parameters = [
+            'content_ids' => $this->getContentIds($product->getVariants()) ?: [$product->getSku()],
+            'content_name' => $product->getName(),
+            'content_type' => 'product'
+        ];
+
+        $this->doEvent($eventName, $eventId, $parameters, $userData);
+
+        return $this->getPixelEventData(
+            $eventName,
+            $eventId,
+            $parameters
+        );
+    }
+
+    public function doAddToCart(\XLite\Model\OrderItem $item)
+    {
+        $eventName = 'AddToCart';
+        $eventId = $this->getEventId($eventName);
+        $userData = $this->getUserData();
+
+        $parameters = [
+            'content_ids' => [$item->getSku()],
+            'contents' => [
+                [
+                    'id' => $item->getSku(),
+                    'quantity' => $item->getAmount(),
+                ]
+            ],
+            'currency' => \XLite::getInstance()->getCurrency()->getCode(),
+            'value' => $item->getPrice() * $item->getAmount(),
+        ];
+
+        $this->doEvent($eventName, $eventId, $parameters, $userData);
+
+        Event::fbAddedToCart($this->getPixelEventData(
+            $eventName,
+            $eventId,
+            $parameters
+        ));
+    }
+
+    public function doInitiateCheckout(\XLite\Model\Cart $cart)
+    {
+        $eventName = 'InitiateCheckout';
+        $eventId = $this->getEventId($eventName);
+        $userData = $this->getUserData();
+
+        $parameters = [
+            'content_ids' => $this->getContentIds($cart->getItems()),
+            'currency' => \XLite::getInstance()->getCurrency()->getCode(),
+            'value' => $cart->getTotal(),
+        ];
+
+        $this->doEvent($eventName, $eventId, $parameters, $userData);
+
+        return $this->getPixelEventData(
+            $eventName,
+            $eventId,
+            $parameters
+        );
+    }
+
     public function doPurchase(\XLite\Model\Order $order)
+    {
+        $eventName = 'Purchase';
+        $eventId = $this->getEventId($eventName);
+        $userData = $order->getOrigProfile()->getFbUserData();
+
+        if (!$userData) {
+            return;
+        }
+
+        $parameters = [
+            "content_ids" => $this->getContentIds($order->getItems()),
+            "currency" => \XLite::getInstance()->getCurrency()->getCode(),
+            "value" => $order->getTotal(),
+        ];
+
+        $this->doEvent($eventName, $eventId, $parameters, $userData);
+    }
+
+    public function updateUserData($profile)
+    {
+        if (!$this->isEnabled() || !$profile) {
+            return;
+        }
+
+        $userData = $this->getUserData($profile);
+
+        $profile->setFbUserData($userData);
+        \XLite\Core\Database::getEM()->persist($profile);
+        \XLite\Core\Database::getEM()->flush();
+    }
+
+    private function getUserData($profile = null)
+    {
+        if (!$profile) {
+            $profile = Auth::getInstance()->getProfile();
+        }
+
+        $data = [
+            'client_ip_address' => $_SERVER['REMOTE_ADDR'],
+            'client_user_agent' => $_SERVER['HTTP_USER_AGENT'],
+            'fbc' => $_COOKIE['_fbc'] ?? null,
+            'fbp' => $_COOKIE['_fbp'] ?? null,
+        ];
+
+        if ($profile) {
+            $data['em'] = [
+                hash('sha256', $profile->getLogin() ?: '')
+            ];
+
+            $data['ph'] = [
+                hash('sha256', $profile->getAddresses()->first()?->getPhone() ?: '')
+            ];
+        }
+
+        return $data;
+    }
+
+    private function getPixelEventData($eventName = '', $eventId, $parameters = [])
+    {
+        return [
+            'type' => 'track',
+            'eventName' => $eventName,
+            'parameters' => $parameters,
+            'eventIdObject' => ['eventID' => $eventId]
+        ];
+    }
+
+    private function doEvent($eventName = '', $eventId, $customData = [], $userData = [])
     {
         if (!$this->isEnabled())
             return;
 
-        if (!$order->getProfile() || !$this->isIncludedRefererList($order->getProfile())) {
-            return;
-        }
-
-        $data = $this->getOrderEventData($order, 'Purchase');
+        $data = $this->getEventData($eventName, $eventId, $customData, $userData);
 
         if (!$data)
             return;
@@ -26,59 +192,27 @@ class Events
         $api->event($data);
     }
 
-    private function getOrderEventData(\XLite\Model\Order $order, $eventName = '')
+    private function getEventData($eventName = '', $eventId, $customData = [], $userData = [])
     {
-        $items = $order->getItems();
-        $currencyCode = \XLite::getInstance()->getCurrency()->getCode();
-
         $data = [
-            "data" => [
-                [
-                    "event_name" => $eventName,
-                    "event_time" => time(),
-                    "event_id" => $order->getOrderId(),
-                    "event_source_url" => \XLite::getInstance()->getShopURL(),
-                    "action_source" => "website",
-                    "user_data" => [
-                        "em" => [
-                            $order->getProfile()->getLogin() ? hash('sha256', $order->getProfile()->getLogin()) : null,
-                        ],
-                        "ph" => [
-                            $order->getProfile()?->getBillingAddress()?->getPhone() ? hash('sha256', $order->getProfile()->getBillingAddress()->getPhone()) : null,
-                        ]
-                    ],
-                    "custom_data" => [
-                        "value" => $order->getTotal(),
-                        "currency" => $currencyCode,
-                        "content_ids" => $this->getContentIds($items),
-                        "content_type" => "product"
-                    ],
-                    "opt_out" => false
-                ]
-            ],
+            "event_name" => $eventName,
+            "event_time" => time(),
+            "event_id" => $eventId,
+            "event_source_url" => \XLite::getInstance()->getShopURL($_SERVER['REQUEST_URI']),
+            "action_source" => "website",
+            "user_data" => $userData,
+            "custom_data" => $customData,
+            "opt_out" => false
         ];
 
         return $data;
     }
 
-    private function isIncludedRefererList($profile)
+    private function getEventId($eventName = '')
     {
-        $refererList = Config::getInstance()->Iidev->MetaConversionAPI->included_referer_list;
-
-        if (empty($refererList)) {
-            return true;
-        }
-
-        $referers = explode(',', $refererList);
-        $currentReferer = $profile->getReferer() . ':' . json_encode($profile->getRefererParams());
-
-        foreach ($referers as $referer) {
-            if (stripos($currentReferer, trim($referer)) !== false) {
-                return true;
-            }
-        }
-
-        return false;
+        return md5(
+            $eventName . time() . rand(1000, 9999)
+        );
     }
 
     private function getContentIds($items)

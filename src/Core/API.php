@@ -36,11 +36,15 @@ class API
 
     public function event($data)
     {
+        $eventData = [
+            "data" => [$data]
+        ];
+
         if($this->isDebugMode()) {
-            $data['test_event_code'] = Config::getInstance()->Iidev->MetaConversionAPI->test_event_code;
+            $eventData['test_event_code'] = Config::getInstance()->Iidev->MetaConversionAPI->test_event_code;
         }
 
-        $result = $this->doRequest($data);
+        $result = $this->doRequest($eventData);
 
         return $this->isSuccessfulCode($result->code);
     }

@@ -16,18 +16,10 @@ XLite\Model\Config:
     translations:
       - code: en
         option_name: 'Conversions API access token'
-  - name: included_referer_list
-    category: Iidev\MetaConversionAPI
-    type: XLite\View\FormField\Input\Text
-    orderby: 200
-    value: ''
-    translations:
-      - code: en
-        option_name: 'Included referer list'
   - name: enabled
     category: Iidev\MetaConversionAPI
     type: XLite\View\FormField\Input\Checkbox\OnOffWithoutOffLabel
-    orderby: 250
+    orderby: 200
     value: ''
     translations:
       - code: en
@@ -35,7 +27,7 @@ XLite\Model\Config:
   - name: test_event_code
     category: Iidev\MetaConversionAPI
     type: XLite\View\FormField\Input\Text
-    orderby: 300
+    orderby: 250
     value: ''
     translations:
       - code: en
@@ -43,7 +35,7 @@ XLite\Model\Config:
   - name: is_debug
     category: Iidev\MetaConversionAPI
     type: XLite\View\FormField\Input\Checkbox\OnOffWithoutOffLabel
-    orderby: 350
+    orderby: 300
     value: ''
     translations:
       - code: en
