@@ -4,8 +4,6 @@ namespace Iidev\MetaConversionAPI\Controller\Customer;
 
 use Iidev\MetaConversionAPI\Core\Events;
 use XCart\Extender\Mapping\Extender;
-use XLite\Core\Session;
-use \XLite\Core\Auth;
 
 /**
  * Checkout
@@ -13,11 +11,12 @@ use \XLite\Core\Auth;
  */
 class Checkout extends \XLite\Controller\Customer\Checkout
 {
-    protected function doActionCheckout()
+    public function processSucceed($fullProcess = true)
     {
+        parent::processSucceed($fullProcess);
+
         $events = new Events();
-        $events->updateUserData(Auth::getInstance()->getProfile());
+        $events->updatefbData($this->getCart()->getOrderId());
         
-        parent::doActionCheckout();
     }
 }

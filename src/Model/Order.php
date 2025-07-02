@@ -4,6 +4,7 @@ namespace Iidev\MetaConversionAPI\Model;
 
 use XCart\Extender\Mapping\Extender;
 use Iidev\MetaConversionAPI\Core\Events;
+use Doctrine\ORM\Mapping as ORM;
 
 /**
  *
@@ -11,6 +12,38 @@ use Iidev\MetaConversionAPI\Core\Events;
  */
 abstract class Order extends \XLite\Model\Order
 {
+    /**
+     * fb  data
+     *
+     * @var string
+     *
+     * @ORM\Column(type="text")
+     */
+    protected $fbData = '';
+
+    /**
+     * Get fb data as an array
+     *
+     * @return array
+     */
+    public function getFbData(): array
+    {
+        return json_decode($this->fbData, true) ?: [];
+    }
+
+    /**
+     * Set fb data from an array
+     * @return self
+     */
+    public function setFbData($fbData): self
+    {
+        if (!is_array($fbData))
+            return $this;
+
+        $this->fbData = json_encode($fbData);
+        return $this;
+    }
+
     public function setPaymentStatus($paymentStatus = null)
     {
         parent::setPaymentStatus($paymentStatus);
@@ -57,11 +90,11 @@ abstract class Order extends \XLite\Model\Order
             return false;
         }
 
-        if($paymentStatus === \XLite\Model\Order\Status\Payment::STATUS_PAID && $shippingStatus === \XLite\Model\Order\Status\Shipping::STATUS_SHIPPED) {
+        if ($paymentStatus === \XLite\Model\Order\Status\Payment::STATUS_PAID && $shippingStatus === \XLite\Model\Order\Status\Shipping::STATUS_SHIPPED) {
             return true;
         }
 
-        if($paymentStatus === \XLite\Model\Order\Status\Payment::STATUS_PAID && $shippingStatus === \XLite\Model\Order\Status\Shipping::STATUS_DELIVERED) {
+        if ($paymentStatus === \XLite\Model\Order\Status\Payment::STATUS_PAID && $shippingStatus === \XLite\Model\Order\Status\Shipping::STATUS_DELIVERED) {
             return true;
         }
 

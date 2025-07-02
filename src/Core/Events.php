@@ -5,8 +5,6 @@ namespace Iidev\MetaConversionAPI\Core;
 use Iidev\MetaConversionAPI\Core\API;
 use XLite\Core\Config;
 use \XLite\Core\Event;
-use \XLite\Core\Auth;
-
 
 class Events
 {
@@ -113,9 +111,9 @@ class Events
     {
         $eventName = 'Purchase';
         $eventId = $this->getEventId($eventName);
-        $userData = $order->getOrigProfile()->getFbUserData();
-
-        if (!$userData) {
+        $fbData = $order->getFbData();
+        
+        if (!$fbData) {
             return;
         }
 
@@ -125,26 +123,28 @@ class Events
             "value" => $order->getTotal(),
         ];
 
-        $this->doEvent($eventName, $eventId, $parameters, $userData);
+        $this->doEvent($eventName, $eventId, $parameters, $fbData);
     }
 
-    public function updateUserData($profile)
+    public function updatefbData($orderid)
     {
-        if (!$this->isEnabled() || !$profile) {
+        $order = \XLite\Core\Database::getRepo(\XLite\Model\Order::class)->find($orderid);
+
+        if (!$this->isEnabled() || !$order) {
             return;
         }
 
-        $userData = $this->getUserData($profile);
+        $userData = $this->getUserData($order->getProfile());
 
-        $profile->setFbUserData($userData);
-        \XLite\Core\Database::getEM()->persist($profile);
-        \XLite\Core\Database::getEM()->flush();
+        $order->setFbData($userData);
+
+        \XLite\Core\Database::getEM()->persist($order);
     }
 
     private function getUserData($profile = null)
     {
-        if (!$profile) {
-            $profile = Auth::getInstance()->getProfile();
+        if(!$profile) {
+            $profile = \XLite\Core\Auth::getInstance()->getProfile();
         }
 
         $data = [
@@ -158,9 +158,11 @@ class Events
             $data['em'] = [
                 hash('sha256', $profile->getLogin() ?: '')
             ];
+        }
 
+        if ($profile && $profile->getAddresses()?->first()) {
             $data['ph'] = [
-                hash('sha256', $profile->getAddresses()->first()?->getPhone() ?: '')
+                hash('sha256', $profile?->getAddresses()->first()->getPhone() ?: '')
             ];
         }
 
@@ -177,12 +179,12 @@ class Events
         ];
     }
 
-    private function doEvent($eventName = '', $eventId, $customData = [], $userData = [])
+    private function doEvent($eventName = '', $eventId, $customData = [], $fbData = [])
     {
         if (!$this->isEnabled())
             return;
 
-        $data = $this->getEventData($eventName, $eventId, $customData, $userData);
+        $data = $this->getEventData($eventName, $eventId, $customData, $fbData);
 
         if (!$data)
             return;
@@ -192,7 +194,7 @@ class Events
         $api->event($data);
     }
 
-    private function getEventData($eventName = '', $eventId, $customData = [], $userData = [])
+    private function getEventData($eventName = '', $eventId, $customData = [], $fbData = [])
     {
         $data = [
             "event_name" => $eventName,
@@ -200,7 +202,7 @@ class Events
             "event_id" => $eventId,
             "event_source_url" => \XLite::getInstance()->getShopURL($_SERVER['REQUEST_URI']),
             "action_source" => "website",
-            "user_data" => $userData,
+            "user_data" => $fbData,
             "custom_data" => $customData,
             "opt_out" => false
         ];
