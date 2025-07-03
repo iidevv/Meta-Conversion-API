@@ -134,7 +134,7 @@ class Events
             return;
         }
 
-        $userData = $this->getUserData($order->getProfile());
+        $userData = $this->getUserData($order->getOrigProfile());
 
         $order->setFbData($userData);
 
@@ -152,6 +152,7 @@ class Events
             'client_user_agent' => $_SERVER['HTTP_USER_AGENT'],
             'fbc' => $_COOKIE['_fbc'] ?? null,
             'fbp' => $_COOKIE['_fbp'] ?? null,
+            'external_id' => $this->getExternalId(),
         ];
 
         if ($profile) {
@@ -208,6 +209,21 @@ class Events
         ];
 
         return $data;
+    }
+
+    public function getExternalId()
+    {
+        $externalId = [];
+
+        $profile = \XLite\Core\Auth::getInstance()->getProfile();
+
+        if ($profile) {
+            $externalId[] = hash('sha256', $profile->getProfileId());
+        }
+
+        $externalId[] = hash('sha256', $_COOKIE['xid']);
+
+        return $externalId;
     }
 
     private function getEventId($eventName = '')

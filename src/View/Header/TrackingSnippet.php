@@ -29,6 +29,17 @@ class TrackingSnippet extends AView
         return Config::getInstance()->Iidev->MetaConversionAPI->pixel_id;
     }
 
+    public function getExternalId()
+    {
+        $profile = \XLite\Core\Auth::getInstance()->getProfile();
+
+        if ($profile) {
+            return hash('sha256', $profile->getProfileId());
+        }
+
+        return hash('sha256', $_COOKIE['xid']);
+    }
+
     public function isEnabled()
     {
         return Config::getInstance()->Iidev->MetaConversionAPI->enabled;

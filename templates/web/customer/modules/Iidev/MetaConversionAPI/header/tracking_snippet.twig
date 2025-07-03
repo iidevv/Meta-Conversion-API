@@ -1,8 +1,8 @@
 {##
  # Conversion API head
  #}
-{% if this.isEnabled() %}
 <!-- Meta Pixel Code -->
+{% if this.isEnabled() %}
 <script>
 !function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -12,13 +12,12 @@ n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '{{ this.getPixelId() }}');
+fbq('init', '{{ this.getPixelId() }}', {'external_id': '{{ this.getExternalId() }}'});
 fbq('track', 'PageView');
 </script>
 <noscript><img height="1" width="1" style="display:none"
 src="https://www.facebook.com/tr?id={{ this.getPixelId() }}&ev=PageView&noscript=1"
 /></noscript>
-<!-- End Meta Pixel Code -->
 {% endif %}
 
 {% if this.isProductPage() and this.isEnabled() %}
@@ -42,3 +41,4 @@ src="https://www.facebook.com/tr?id={{ this.getPixelId() }}&ev=PageView&noscript
     );
   </script>
 {% endif %}
+<!-- End Meta Pixel Code -->
